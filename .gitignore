@@ -1,0 +1,17 @@
+# Secrets
+.env
+*.env
+config.local.js
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log

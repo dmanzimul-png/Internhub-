@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>InternHub – Find Your Internship</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">Intern<span>Hub</span></div>
+    <p class="tagline">Discover internships that launch careers</p>
+  </header>
+
+  <main>
+    <!-- Search Bar -->
+    <section class="search-section">
+      <form id="searchForm">
+        <input type="text" id="queryInput" placeholder="Role (e.g. Software Engineer Intern)" required />
+        <input type="text" id="locationInput" placeholder="Location (e.g. New York, Remote)" />
+        <button type="submit">Search</button>
+      </form>
+    </section>
+
+    <!-- Filters & Sort -->
+    <section class="controls" id="controls" style="display:none">
+      <div class="filters">
+        <label>Employment Type:
+          <select id="filterType">
+            <option value="">All</option>
+            <option value="INTERN">Internship</option>
+            <option value="FULLTIME">Full-time</option>
+            <option value="PARTTIME">Part-time</option>
+            <option value="CONTRACTOR">Contract</option>
+          </select>
+        </label>
+        <label>Remote Only:
+          <input type="checkbox" id="filterRemote" />
+        </label>
+      </div>
+      <div class="sort">
+        <label>Sort by:
+          <select id="sortBy">
+            <option value="relevance">Relevance</option>
+            <option value="date">Date Posted</option>
+            <option value="company">Company A–Z</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <!-- Results Count -->
+    <p id="resultsCount" class="results-count"></p>
+
+    <!-- Loader -->
+    <div id="loader" class="loader" style="display:none">
+      <div class="spinner"></div>
+      <p>Searching internships…</p>
+    </div>
+
+    <!-- Error -->
+    <div id="errorBox" class="error-box" style="display:none"></div>
+
+    <!-- Job Cards -->
+    <section id="jobGrid" class="job-grid"></section>
+
+    <!-- Load More -->
+    <div class="load-more-wrap">
+      <button id="loadMoreBtn" style="display:none" onclick="loadMore()">Load More</button>
+    </div>
+  </main>
+
+  <!-- Job Detail Modal -->
+  <div id="modal" class="modal" style="display:none">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Powered by <a href="https://jobicy.com/jobs-rss-feed" target="_blank">Jobicy API</a> &nbsp;|&nbsp; InternHub © 2025</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
