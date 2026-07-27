@@ -10,6 +10,7 @@ set -e
 GITHUB_USER=${1:-"your-github-username"}
 REPO="internhub"
 DEPLOY_DIR="/var/www/internhub"
+APP_DIR="$DEPLOY_DIR/Internhub-"
 
 echo "==> Installing Nginx..."
 sudo apt update -y
@@ -25,7 +26,7 @@ server {
     listen 80;
     server_name _;
 
-    root $DEPLOY_DIR;
+    root $APP_DIR;
     index index.html;
 
     location / {

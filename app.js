@@ -15,7 +15,6 @@ const queryInput    = document.getElementById('queryInput');
 const locationInput = document.getElementById('locationInput');
 const controls      = document.getElementById('controls');
 const filterType    = document.getElementById('filterType');
-const filterRemote  = document.getElementById('filterRemote');
 const sortBy        = document.getElementById('sortBy');
 const jobGrid       = document.getElementById('jobGrid');
 const loader        = document.getElementById('loader');
@@ -26,14 +25,13 @@ const loadMoreBtn   = document.getElementById('loadMoreBtn');
 // ── Event Listeners ──────────────────────────────────────
 searchForm.addEventListener('submit', e => { e.preventDefault(); fetchJobs(); });
 filterType.addEventListener('change', applyFiltersAndSort);
-filterRemote.addEventListener('change', applyFiltersAndSort);
 sortBy.addEventListener('change', applyFiltersAndSort);
 
 // ── Fetch ────────────────────────────────────────────────
 async function fetchJobs() {
   const query    = queryInput.value.trim();
-  const location = locationInput.value.trim();
-  const q        = location ? `${query} in ${location}` : query;
+  const keyword  = locationInput.value.trim();
+  const q        = keyword ? `${query} ${keyword}` : query;
 
   showLoader(true);
   showError('');
@@ -88,12 +86,10 @@ async function fetchJobs() {
 
 // ── Filter & Sort ────────────────────────────────────────
 function applyFiltersAndSort() {
-  const type   = filterType.value;
-  const remote = filterRemote.checked;
+  const type = filterType.value;
 
   filtered = allJobs.filter(job => {
-    if (type   && job.job_employment_type !== type) return false;
-    if (remote && !job.job_is_remote)               return false;
+    if (type && job.job_employment_type !== type) return false;
     return true;
   });
 

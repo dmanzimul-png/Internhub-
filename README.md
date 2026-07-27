@@ -9,9 +9,8 @@
 
 ## Features
 
-- 🔍 Search internships by role and location
+- 🔍 Search internships by role and additional keywords (e.g. Python, React)
 - 🏷️ Filter by employment type (Internship, Full-time, Part-time, Contract)
-- 🌐 Toggle Remote-only listings
 - 📅 Sort by Relevance, Date Posted, or Company A–Z
 - 📋 View full job details in a modal popup
 - 🔗 Direct Apply button linking to original job posting
@@ -37,8 +36,10 @@
 - Documentation: https://jobicy.com/jobs-rss-feed
 - Provider: Jobicy
 - Endpoint: `GET https://jobicy.com/api/v2/remote-jobs`
-- Auth: None required — fully free and open
+- Auth: None required — fully free and open (**no API key needed**)
 - Rate limit: No strict limit on free usage
+
+> ⚠️ **API Key Note:** This application requires no API key. Jobicy is a fully public, free API. No credentials are needed to run or deploy this project.
 
 > Credit: [Jobicy](https://jobicy.com) — Remote Jobs API
 
@@ -162,9 +163,23 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ✅ Verify load balancing is working:
 ```bash
-# Run this several times — traffic alternates between Web01 and Web02
-curl -I http://<lb01-ip>
+# Run this several times — you should see traffic alternating between Web01 and Web02
+for i in {1..6}; do curl -s http://<lb01-ip> | grep -o 'InternHub'; done
 ```
+
+Expected output: each request is served (Nginx round-robin distributes between the two servers). You can also add a unique identifier per server to confirm:
+```bash
+# On Web01 — add a comment to index.html
+echo '<!-- served by web01 -->' | sudo tee -a /var/www/internhub/Internhub-/index.html
+
+# On Web02
+echo '<!-- served by web02 -->' | sudo tee -a /var/www/internhub/Internhub-/index.html
+
+# Then from your local machine, run multiple times and check the comment:
+curl -s http://<lb01-ip> | grep 'served by'
+```
+
+You should see `web01` and `web02` alternating, confirming the load balancer is distributing traffic correctly.
 
 ---
 
