@@ -8,7 +8,7 @@
 set -e
 
 GITHUB_USER=${1:-"your-github-username"}
-REPO="internhub"
+REPO="Internhub-"
 DEPLOY_DIR="/var/www/internhub"
 APP_DIR="$DEPLOY_DIR/Internhub-"
 
