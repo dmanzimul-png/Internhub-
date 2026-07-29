@@ -2,7 +2,7 @@
 
 **InternHub** is a web application that helps students and recent graduates discover real internship and job opportunities worldwide. It fetches live listings from the Jobicy API and lets users search, filter, sort, and apply — all from one clean, responsive interface.
 
-🌐 **Live Demo (Load Balancer):** `http://<lb01-ip>` *(update after deployment)*  
+🌐 **Live Demo (via Load Balancer, HTTPS):** https://www.elvisonline.tech
 🎥 **Demo Video:** [Watch on YouTube](#) *(update after recording)*
 
 ---
@@ -21,12 +21,24 @@
 
 ## Tech Stack
 
-| Layer    | Technology                    |
-|----------|-------------------------------|
-| Frontend | HTML5, CSS3, Vanilla JS       |
-| API      | Jobicy Remote Jobs API (free) |
-| Server   | Nginx (static file serving)   |
-| LB       | Nginx (reverse proxy)         |
+| Layer          | Technology                                         |
+|----------------|-----------------------------------------------------|
+| Frontend       | HTML5, CSS3, Vanilla JS                             |
+| API            | Jobicy Remote Jobs API (free, no key required)      |
+| Web servers    | Nginx (static file serving) on two Ubuntu servers   |
+| Load balancer  | HAProxy — round-robin, SSL termination, HTTP→HTTPS redirect |
+
+---
+
+## Infrastructure
+
+| Server  | Role                                  | IP               |
+|---------|----------------------------------------|------------------|
+| web-01  | Nginx web server, serves InternHub    | 54.197.181.240   |
+| web-02  | Nginx web server, serves InternHub    | 54.152.40.132    |
+| lb-01   | HAProxy load balancer (round robin)   | 18.206.121.71    |
+
+**Domain:** `www.elvisonline.tech` → points to lb-01, secured with a Let's Encrypt SSL certificate. HAProxy terminates SSL and redirects all HTTP traffic to HTTPS with a 301.
 
 ---
 
@@ -49,28 +61,25 @@
 
 ### Prerequisites
 - Any modern browser (Chrome, Firefox, Edge)
-- No API key or server needed
+- No API key or backend server needed
 
 ### Steps
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<your-username>/internhub.git
-   cd internhub
+   git clone https://github.com/dmanzimul-png/Internhub-.git
+   cd Internhub-
    ```
 
-2. Open `index.html` directly in your browser:
+2. Serve the folder locally (opening `index.html` directly via `file://` can block the API fetch in some browsers, so a simple local server is safest):
    ```bash
-   # Windows
-   start index.html
-
-   # macOS / Linux
-   open index.html
+   python3 -m http.server 8000
    ```
+   Then open `http://localhost:8000` in your browser.
 
-3. Type a role in the search box (e.g. `software engineer`) and hit **Search**.
+3. Type a role in the search box (e.g. `software engineer intern`) and hit **Search**.
 
-> No build step, no dependencies, no server required.
+> No build step, no dependencies, no server required beyond a static file server.
 
 ---
 
@@ -82,104 +91,56 @@
 git init
 git add .
 git commit -m "Initial commit"
-git remote add origin https://github.com/<your-username>/internhub.git
+git remote add origin https://github.com/dmanzimul-png/Internhub-.git
 git push -u origin main
 ```
 
----
+### 2. Deploy to web-01 and web-02
 
-### 2. Deploy to Web01 and Web02
-
-SSH into each server and run:
+Both servers were already provisioned with Nginx from an earlier infrastructure project. Deployment is automated with `deploy-webserver.sh`:
 
 ```bash
-# Copy the deploy script to the server first, then:
-bash deploy-webserver.sh <your-github-username>
+# Copy the script to each server, then run it there:
+scp -i ~/.ssh/school deploy-webserver.sh ubuntu@<web-ip>:~/
+ssh -i ~/.ssh/school ubuntu@<web-ip>
+sudo apt install -y git   # if not already installed
+bash deploy-webserver.sh dmanzimul-png
 ```
 
-Or manually:
+The script:
+- Installs Nginx (if not already present)
+- Clones this repository into `/var/www/internhub`
+- Writes an Nginx server block that serves `/var/www/internhub` as the site root
+- Enables the site and reloads Nginx
 
+✅ Verify each server independently:
 ```bash
-sudo apt update && sudo apt install -y nginx
-sudo git clone https://github.com/<your-username>/internhub.git /var/www/internhub
-
-sudo tee /etc/nginx/sites-available/internhub > /dev/null <<EOF
-server {
-    listen 80;
-    server_name _;
-    root /var/www/internhub;
-    index index.html;
-    location / {
-        try_files \$uri \$uri/ =404;
-    }
-}
-EOF
-
-sudo ln -sf /etc/nginx/sites-available/internhub /etc/nginx/sites-enabled/internhub
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl reload nginx
+curl -s http://54.197.181.240 | grep -o InternHub
+curl -s http://54.152.40.132  | grep -o InternHub
 ```
 
-✅ Verify: Open `http://<web01-ip>` and `http://<web02-ip>` in your browser.
+### 3. Load balancer (lb-01)
 
----
+Unlike a fresh setup, `lb-01` already had **HAProxy** installed and configured from an earlier networking project, load balancing between web-01 and web-02 on port 80 using round-robin. Because both servers were re-deployed with InternHub in place of their previous content, HAProxy began serving InternHub automatically — no load balancer reconfiguration was needed.
 
-### 3. Configure Load Balancer (Lb01)
+HAProxy on lb-01 also:
+- Terminates SSL on port 443 using a Let's Encrypt certificate for `www.elvisonline.tech`
+- Redirects all HTTP (port 80) traffic to HTTPS with a 301
 
-SSH into Lb01 and run:
-
+✅ Verify load balancing (run several times, note the responses come from either server):
 ```bash
-bash setup-loadbalancer.sh <web01-ip> <web02-ip>
+curl -sI https://www.elvisonline.tech
+curl -sI https://www.elvisonline.tech
+curl -sI https://www.elvisonline.tech
 ```
 
-Or manually:
-
+✅ Verify HTTP → HTTPS redirect:
 ```bash
-sudo apt update && sudo apt install -y nginx
-
-sudo tee /etc/nginx/sites-available/internhub-lb > /dev/null <<EOF
-upstream internhub_backend {
-    server <web01-ip>;
-    server <web02-ip>;
-}
-
-server {
-    listen 80;
-    server_name _;
-
-    location / {
-        proxy_pass         http://internhub_backend;
-        proxy_set_header   Host            \$host;
-        proxy_set_header   X-Real-IP       \$remote_addr;
-        proxy_set_header   X-Forwarded-For \$proxy_add_x_forwarded_for;
-    }
-}
-EOF
-
-sudo ln -sf /etc/nginx/sites-available/internhub-lb /etc/nginx/sites-enabled/internhub-lb
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t && sudo systemctl reload nginx
+curl -sIL http://www.elvisonline.tech
 ```
+Expect a `301 Moved Permanently` followed by a `200 OK`.
 
-✅ Verify load balancing is working:
-```bash
-# Run this several times — you should see traffic alternating between Web01 and Web02
-for i in {1..6}; do curl -s http://<lb01-ip> | grep -o 'InternHub'; done
-```
-
-Expected output: each request is served (Nginx round-robin distributes between the two servers). You can also add a unique identifier per server to confirm:
-```bash
-# On Web01 — add a comment to index.html
-echo '<!-- served by web01 -->' | sudo tee -a /var/www/internhub/Internhub-/index.html
-
-# On Web02
-echo '<!-- served by web02 -->' | sudo tee -a /var/www/internhub/Internhub-/index.html
-
-# Then from your local machine, run multiple times and check the comment:
-curl -s http://<lb01-ip> | grep 'served by'
-```
-
-You should see `web01` and `web02` alternating, confirming the load balancer is distributing traffic correctly.
+> Note: `setup-loadbalancer.sh` in this repo shows how to configure a load balancer with Nginx from scratch, in case you're deploying to a fresh load balancer server that doesn't already have HAProxy set up.
 
 ---
 
@@ -187,6 +148,7 @@ You should see `web01` and `web02` alternating, confirming the load balancer is 
 
 - No API keys used — Jobicy API is fully public
 - All user input is HTML-escaped before rendering (XSS protection)
+- Traffic to the deployed site is encrypted end-to-end via HAProxy SSL termination
 - `.gitignore` prevents sensitive files from being committed
 
 ---
@@ -199,6 +161,7 @@ You should see `web01` and `web02` alternating, confirming the load balancer is 
 | Company logos failing to load | `onerror` fallback to UI Avatars initials image |
 | Long job descriptions overflowing cards | CSS `line-clamp` truncates to 3 lines; full text shown in modal |
 | Pagination without a backend | Client-side slicing of cached `allJobs` array |
+| Deploy script wrote files to the wrong path | Fixed by pointing Nginx `root` directly at the git clone target directory |
 
 ---
 
@@ -206,7 +169,9 @@ You should see `web01` and `web02` alternating, confirming the load balancer is 
 
 - [Jobicy API](https://jobicy.com/jobs-rss-feed) — live remote job listings
 - [UI Avatars](https://ui-avatars.com/) — fallback company logo generation
-- [Nginx](https://nginx.org/) — web server and load balancer
+- [Nginx](https://nginx.org/) — web server (web-01, web-02)
+- [HAProxy](https://www.haproxy.org/) — load balancer and SSL termination (lb-01)
+- [Let's Encrypt](https://letsencrypt.org/) — free SSL certificate
 
 ---
 
