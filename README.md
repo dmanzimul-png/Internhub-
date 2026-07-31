@@ -3,7 +3,7 @@
 **InternHub** is a web application that helps students and recent graduates discover real internship and job opportunities worldwide. It fetches live listings from the Jobicy API and lets users search, filter, sort, and apply — all from one clean, responsive interface.
 
 🌐 **Live Demo (via Load Balancer, HTTPS):** https://www.elvisonline.tech
-🎥 **Demo Video:** [Watch on YouTube](#) *(update after recording)*
+🎥 **Demo Video:** [Watch on YouTube](#) *https://youtu.be/kgRWw-Uc0Sk*
 
 ---
 
